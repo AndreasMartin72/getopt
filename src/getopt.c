@@ -38,7 +38,8 @@
 static int str_case_cmp_len(const char* s1, const char* s2, unsigned int len)
 {
 #if defined (_MSC_VER)
-	for(unsigned int i = 0; i < len; i++)
+	unsigned int i;
+	for(i = 0; i < len; i++)
 	{
 		int c1 = tolower(s1[i]);
 		int c2 = tolower(s2[i]);
@@ -54,9 +55,10 @@ static int str_case_cmp_len(const char* s1, const char* s2, unsigned int len)
 
 static int str_format(char* buf, size_t buf_size, const char* fmt, ...)
 {
+	int ret;
 	va_list args;
 	va_start( args, fmt );
-	int ret = vsnprintf( buf, buf_size, fmt, args );
+	ret = vsnprintf( buf, buf_size, fmt, args );
 #if defined(_MSC_VER)
 	buf[buf_size - 1] = '\0';
 #endif
@@ -66,6 +68,9 @@ static int str_format(char* buf, size_t buf_size, const char* fmt, ...)
 
 int getopt_create_context( getopt_context_t* ctx, int argc, const char** argv, const getopt_option_t* opts )
 {
+	getopt_option_t cmp_opt;
+	const getopt_option_t* opt = opts;
+
 	ctx->argc            = argc - 1; /* stripping away file-name! */
 	ctx->argv            = argv + 1; /* stripping away file-name! */
 	ctx->opts            = opts;
@@ -74,9 +79,7 @@ int getopt_create_context( getopt_context_t* ctx, int argc, const char** argv, c
 
 	/* count opts */
 	ctx->num_opts = 0;
-	getopt_option_t cmp_opt;
 	memset( &cmp_opt, 0x0, sizeof(getopt_option_t) );
-	const getopt_option_t* opt = opts;
 	while( memcmp( opt, &cmp_opt, sizeof(getopt_option_t) ) != 0 )
 	{
 		if( opt->value == '!' || 
@@ -96,14 +99,17 @@ int getopt_create_context( getopt_context_t* ctx, int argc, const char** argv, c
 
 int getopt_next( getopt_context_t* ctx )
 {
+	const char* curr_token;
+	const getopt_option_t* found_opt = 0x0;
+	const char* found_arg = 0x0;
+
 	/* are all options processed? */
 	if(ctx->current_index == ctx->argc )
 		return -1;
 
 	/* reset opt-arg */
+	curr_token = ctx->argv[ ctx->current_index ];
 	ctx->current_opt_arg = 0x0;
-
-	const char* curr_token = ctx->argv[ ctx->current_index ];
 	
 	/* this token has been processed! */
 	ctx->current_index++;
@@ -115,8 +121,6 @@ int getopt_next( getopt_context_t* ctx )
 		return '+'; /* return '+' as identifier for no option! */
 	}
 	
-	const getopt_option_t* found_opt = 0x0;
-	const char* found_arg = 0x0;
 
 	/* short opt */
 	if( curr_token[1] != '\0' && curr_token[1] != '-' && curr_token[2] == '\0' )
@@ -255,6 +259,7 @@ int getopt_next( getopt_context_t* ctx )
 
 const char* getopt_create_help_string( getopt_context_t* ctx, char* buffer, size_t buffer_size )
 {
+	size_t outpos;
 	size_t buffer_pos = 0;
 	int    opt_index  = 0;
 	for( ; opt_index < ctx->num_opts; ++opt_index )
@@ -266,7 +271,7 @@ const char* getopt_create_help_string( getopt_context_t* ctx, char* buffer, size
 		if( chars_written < 0 )
 			return buffer;
 
-		size_t outpos = (size_t)chars_written;
+		outpos = (size_t)chars_written;
 
 		switch( opt->type )
 		{
