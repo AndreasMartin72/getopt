@@ -82,12 +82,19 @@ int getopt_create_context( getopt_context_t* ctx, int argc, const char** argv, c
 	memset( &cmp_opt, 0x0, sizeof(getopt_option_t) );
 	while( memcmp( opt, &cmp_opt, sizeof(getopt_option_t) ) != 0 )
 	{
-		if( opt->value == '!' || 
-			opt->value == '?' || 
-			opt->value == '+' || 
-			opt->value ==  0  || 
-			opt->value == -1)
-			return -1;
+		// Allow flags to be '!', '?', '+', 0
+		if( opt->type == GETOPT_OPTION_TYPE_OPTIONAL ||
+			opt->type == GETOPT_OPTION_TYPE_REQUIRED ||
+			opt->type == GETOPT_OPTION_TYPE_NO_ARG )
+		{
+
+			if( opt->value == '!' || 
+				opt->value == '?' || 
+				opt->value == '+' || 
+				opt->value ==  0  || 
+				opt->value == -1)
+				return -1;
+	    }
 
 		ctx->num_opts++; opt++;
 	}
